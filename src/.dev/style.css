@@ -5,7 +5,6 @@
   z-index: 0;
 }
 
-
 html {
   font-family: 'Roboto', sans-serif;
   font-size: 16px;
@@ -70,7 +69,6 @@ body {
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
-
 #move-count {
   font-size: 20px;
   font-weight: 600;

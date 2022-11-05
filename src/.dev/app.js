@@ -5,40 +5,9 @@ import { SMALLESTMAZE, BIGMAZE } from '../maze-maps.js';
 import { MazeModel } from '../MazeModel.js';
 // import { bfs } from './shortest-path.js';
 
-
 const { forkJoin, Observable, iif, BehaviorSubject, AsyncSubject, Subject, interval, of , fromEvent, merge, empty, delay, from } = rxjs;
 const { distinctUntilChanged, takeWhile, flatMap, reduce, groupBy, toArray, mergeMap, switchMap, scan, map, tap, filter } = rxjs.operators;
 const { fromFetch } = rxjs.fetch;
-
-
-const MAP_SYMBOLS = new Map([
-  ['#', ((options = {}) => ({ ...{ symbol: '#', cellTypeId: 0, cellTypeName: 'barrier', direction: null, isCharacter: false, isPassable: false, }, ...options })).bind(this)],
-  ['<', ((options = {}) => ({ ...{ symbol: '<', cellTypeId: 1, cellTypeName: 'character', direction: 'left', hasCharacter: true, isPassable: false, }, ...options })).bind(this)],
-  ['>', ((options = {}) => ({ ...{ symbol: '>', cellTypeId: 1, cellTypeName: 'character', direction: 'right', hasCharacter: true, isPassable: false, }, ...options })).bind(this)],
-  ['^', ((options = {}) => ({ ...{ symbol: '^', cellTypeId: 1, cellTypeName: 'character', direction: 'up', hasCharacter: true, isPassable: false, }, ...options })).bind(this)],
-  ['v', ((options = {}) => ({ ...{ symbol: 'v', cellTypeId: 1, cellTypeName: 'character', direction: 'down', hasCharacter: true, isPassable: false, }, ...options })).bind(this)],
-  [' ', ((options = {}) => ({ ...{ symbol: ' ', cellTypeId: 2, cellTypeName: 'ground', direction: null, isCharacter: false, isPassable: true, }, ...options })).bind(this)],
-  ['x', ((options = {}) => ({ ...{ symbol: 'x', cellTypeId: 3, cellTypeName: 'exit', direction: null, isCharacter: false, isPassable: true, isExit: true }, ...options })).bind(this)],
-  ['.', ((options = {}) => ({ ...{ symbol: '.', cellTypeId: 4, cellTypeName: 'path', direction: null, isCharacter: false, isPassable: true, isExit: false }, ...options })).bind(this)],
-]);
-
-// const newBarrier = () => ({ symbol: '#', cellTypeId: 0, cellTypeName: 'barrier', isCharacter: false, isPassable: false, })
-// const newCharacter = () => ({ symbol: '<', cellTypeId: 1, cellTypeName: 'character', isCharacter: true, isPassable: false, })
-// const newGround = () => ({ symbol: ' ', cellTypeId: 2, cellTypeName: 'ground', isCharacter: false, isPassable: true, })
-
-const DIRECTIONS = {
-  right: [1, 0],
-  down: [0, 1],
-  left: [-1, 0],
-  up: [0, -1],
-}
-
-const characterSymbols = new TwoWayMap([
-  ['<', 'left'],
-  ['>', 'right'],
-  ['^', 'up'],
-  ['v', 'down'],
-]);
 
 const navigate = (pathState) => {
   if ((curr && curr.isExit)) {
