@@ -227,9 +227,10 @@ export class MazeModel {
     else this.shortestPath = null
 
     const output = this.#map.reduce((string, row, i) => {
-      return `${string}\n${row.map(cell=> {
+      return `${string}\n${
+      row.map(cell=> {
     
-      if (cell.isPathNode == true && !cell.hasCharacter) { return '.'; } 
+        if (cell.isPathNode == true && !cell.hasCharacter) { return '.'; } 
         
         return cell.hasCharacter === true ? characterSymbols.get(this.directionMoving || 'left') : cell.symbol;
       }).join('')}`;
@@ -247,7 +248,7 @@ export class MazeModel {
     this.targetCell = this.cell(+row, +column)
 
     // console.warn('this.cell(+row, +column)',
-      // this.cell(+row, +column)
+    // this.cell(+row, +column)
     // )
     // console.log('this.setTargetCell', this.targetCell)
     let pathNode = this.shortestPathDfs(this.characterCell, this.setTargetCell)
@@ -275,7 +276,7 @@ export class MazeModel {
 
     return pathNode;
   }
-  
+
   shortestPathDfs(cell = this.characterCell, stopNode = this.targetCell || this.exitCell) {
     // console.warn('shortestPathDfs', { start: cell.position, stop: stopNode.position })
     if (cell === stopNode) return cell;
@@ -291,6 +292,7 @@ export class MazeModel {
 
       while (cell && unvisitedNeighbors.length === 0) {
         cell.isPathNode = false;
+        console.log('cell.previous', cell.previous)
         cell = cell.previous;
 
         unvisitedNeighbors = this.getUnvisitedNeighbors(cell);
@@ -300,7 +302,7 @@ export class MazeModel {
     }
 
     else {
-        this.cnt = (this.cnt || 0) + 1;
+      this.cnt = (this.cnt || 0) + 1;
 
       for (var [direction, neighbor] of unvisitedNeighbors) {
         neighbor.previous = cell;
@@ -312,6 +314,7 @@ export class MazeModel {
         }
 
         else {
+          
           return cell
         }
       }
