@@ -69,6 +69,8 @@ export class MazeModel {
   }
 
   set characterCell(target) {
+    console.log('this.#characterCell', this.#characterCell)
+    console.log('target', target)
     if (this.#characterCell) {
       this.#characterCell.hasCharacter = false;
       this.#characterCell.isPathNode = false;
