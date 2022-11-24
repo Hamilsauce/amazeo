@@ -17,8 +17,12 @@ const MAP_SYMBOLS = new Map([
 
 
 const cellFactory = (symbol, options) => {
-  return MAP_SYMBOLS.get(symb)({ id, hasCharacter: false, position: { column, row: r } });
-
+  return MAP_SYMBOLS.get(symbol)(options)
+  // ({
+  //   id,
+  //   hasCharacter: false,
+  //   position: { column, row }
+  // });
 };
 
 export class CellModel {
@@ -29,10 +33,6 @@ export class CellModel {
   get prop() { return this._prop };
   set prop(newValue) { this._prop = newValue };
 }
-
-const newBarrier = () => ({ symbol: '#', cellTypeId: 0, cellTypeName: 'barrier', isCharacter: false, isPassable: false, })
-const newCharacter = () => ({ symbol: '<', cellTypeId: 1, cellTypeName: 'character', isCharacter: true, isPassable: false, })
-const newGround = () => ({ symbol: ' ', cellTypeId: 2, cellTypeName: 'ground', isCharacter: false, isPassable: true, })
 
 const DIRECTIONS = {
   right: [1, 0],
@@ -57,7 +57,7 @@ export class MazeModel {
   #characterCell = null;
   #exitCell = null;
   #directionMoving = null;
-
+  #isGameOver;
 
   constructor(map, dirs = DIRECTIONS) {
     if (map) {
@@ -68,16 +68,18 @@ export class MazeModel {
     this.dirs = dirs;
   }
 
+  get isGameOver() {
+    return this.exitCell === this.characterCell
+  }
+
   set characterCell(target) {
-    console.log('this.#characterCell', this.#characterCell)
-    console.log('target', target)
     if (this.#characterCell) {
       this.#characterCell.hasCharacter = false;
       this.#characterCell.isPathNode = false;
     }
 
     if (target) {
-      this.#characterCell = target
+      this.#characterCell = target;
       this.#characterCell.hasCharacter = true;
     }
 
@@ -119,26 +121,25 @@ export class MazeModel {
 
     if (!(newMap && newMap.length)) return;
 
-    this.#map = newMap
-      .map((row, r) => row.split('')
-        .map((symb, column) => {
-          let id = 'c' + utils.uuid()
+    this.#map = newMap.map((row, r) => row.split('')
+      .map((symb, column) => {
+        const id = 'c' + utils.uuid()
 
-          if (characterSymbols.has(symb)) {
-            this.#characterCell = MAP_SYMBOLS.get(' ')({ id, hasCharacter: true, position: { column, row: r } });
+        if (characterSymbols.has(symb)) {
+          this.#characterCell = cellFactory(' ', { position: { column, row: r }, id, hasCharacter: true })
 
-            return this.#characterCell;
-          }
+          return this.#characterCell;
+        }
 
-          else if (symb.toLowerCase() === 'x') {
-            this.#exitCell = MAP_SYMBOLS.get('x')({ id, isExit: true, position: { column, row: r } });
+        else if (symb.toLowerCase() === 'x') {
+          this.#exitCell = cellFactory('x', { position: { column, row: r }, id, isExit: true })
 
-            return this.#exitCell;
-          }
+          return this.#exitCell;
+        }
 
-          return MAP_SYMBOLS.get(symb)({ id, hasCharacter: false, position: { column, row: r } });
-        })
-      ).filter(_ => _);
+        return cellFactory(symb, { position: { column, row: r } }, id)
+      })
+    ).filter(_ => _);
 
     return this.#map;
   }
@@ -153,10 +154,7 @@ export class MazeModel {
     return { ...cell } || null;
   }
 
-  isOutOfBounds(row, column) {
-    return (row < 0 || row > this.rowCount) || (column < 0 || column > this.columnCount);
-  }
-
+  isInBounds({ row, column }) { return (row >= 0 && row > 0 <= this.rowCount) && (column >= 0 && column <= this.columnCount); }
 
   isCharacterInBounds() {
     return (this.#characterCell.position.row > 0 && this.#characterCell.position.row < this.rowCount) &&
@@ -166,24 +164,20 @@ export class MazeModel {
   cell(row, column) {
     if ([+row, +column].includes(NaN)) return;
 
-    if (this.isOutOfBounds(row, column)) {
-      return null;
-    } else {
-      return this.#map[row][column] || null;
-    }
+    return !this.isInBounds({ row, column }) ?
+      null : this.#map[row][column] || null;
   }
 
-  row(index) {
-    return this.#map[index];
-  }
+  row(index) { return this.#map[index]; }
 
   moveCharacter(dirNameOrRef) {
     const prev = this.characterCell;
 
     if (typeof dirNameOrRef === 'string') {
-      let dirName = dirNameOrRef;
+      const dirName = dirNameOrRef;
 
       this.directionMoving = dirName;
+
       const neighbors = this.findNeighbors(this.characterCell);
 
       if (neighbors[dirName]) this.characterCell = neighbors[dirName];
@@ -216,7 +210,8 @@ export class MazeModel {
   }
 
   findExit(search = 'dfs', startCell = this.characterCell) {
-    return search === 'dfs' ? this.shortestPathDfs(this.characterCell, this.exitCell) :
+    return search === 'dfs' ?
+      this.shortestPathDfs(this.characterCell, this.exitCell) :
       this.shortestPathBfs(this.characterCell, this.exitCell)
   }
 
@@ -226,17 +221,18 @@ export class MazeModel {
 
   print(showPath = false) {
     if (showPath) { this.shortestPath = this.shortestPathDfs(this.characterCell, this.targetCell || this.exitCell); }
-    else this.shortestPath = null
 
-    const output = this.#map.reduce((string, row, i) => {
-      return `${string}\n${
-      row.map(cell=> {
-    
-        if (cell.isPathNode == true && !cell.hasCharacter) { return '.'; } 
+    else this.shortestPath = null;
+
+    const output = this.#map.reduce(
+      (string, row, i) => `${string}\n${
+        row.map(cell=> {
         
-        return cell.hasCharacter === true ? characterSymbols.get(this.directionMoving || 'left') : cell.symbol;
-      }).join('')}`;
-    }, '');
+          if (cell.isPathNode == true && !cell.hasCharacter) { return '.'; } 
+          
+          return cell.hasCharacter === true ? characterSymbols.get(this.directionMoving || 'left') : cell.symbol;
+        }).join('')
+      }`, '');
 
     return output;
   }
@@ -246,21 +242,9 @@ export class MazeModel {
   }
 
   setTargetCell(row, column) {
-    // return this.shortestPathDfs(this.characterCell, target)
     this.targetCell = this.cell(+row, +column)
 
-    // console.warn('this.cell(+row, +column)',
-    // this.cell(+row, +column)
-    // )
-    // console.log('this.setTargetCell', this.targetCell)
     let pathNode = this.shortestPathDfs(this.characterCell, this.setTargetCell)
-
-    // while (pathNode) {
-    //   fn(pathNode);
-    //   pathNode = pathNode.previous;
-    // }
-
-    // console.warn('traversePathCells pathNode', { pathNode })
 
     return pathNode;
   }
@@ -274,17 +258,20 @@ export class MazeModel {
       pathNode = pathNode.previous;
     }
 
-    // console.warn('traversePathCells shortestPathDfs', shortestPathDfs)
-
     return pathNode;
   }
 
   shortestPathDfs(cell = this.characterCell, stopNode = this.targetCell || this.exitCell) {
-    // console.warn('shortestPathDfs', { start: cell.position, stop: stopNode.position })
-    if (cell === stopNode) return cell;
+    // console.warn('this.isOutOfBounds', this.isOutOfBounds(cell.position.row,cell.position.column))
+    cell.isPathNode = true;
+
+    if (cell === stopNode) {
+      console.warn('~~~~~GAME OVER', this);
+      this.gamesOver = true;
+      return cell;
+    }
 
     let unvisitedNeighbors = this.getUnvisitedNeighbors(cell);
-    cell.isPathNode = true;
 
     if (unvisitedNeighbors.length == 0 && cell.previous) {
       cell.isPathNode = false;
@@ -294,7 +281,6 @@ export class MazeModel {
 
       while (cell && unvisitedNeighbors.length === 0) {
         cell.isPathNode = false;
-        console.log('cell.previous', cell.previous)
         cell = cell.previous;
 
         unvisitedNeighbors = this.getUnvisitedNeighbors(cell);
@@ -306,19 +292,14 @@ export class MazeModel {
     else {
       this.cnt = (this.cnt || 0) + 1;
 
-      for (var [direction, neighbor] of unvisitedNeighbors) {
+      for (let [direction, neighbor] of unvisitedNeighbors) {
         neighbor.previous = cell;
 
-        if (neighbor === stopNode) return neighbor;
-
-        if (neighbor !== stopNode && unvisitedNeighbors.length > 0) {
+        if (unvisitedNeighbors.length > 0) {
           return this.shortestPathDfs(neighbor);
         }
 
-        else {
-          
-          return cell
-        }
+        else { return cell }
       }
     }
 

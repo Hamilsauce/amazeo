@@ -30,8 +30,11 @@ export class AppController {
         filter(_ => _),
         tap(dir => { this.#mazeModel.moveCharacter(dir); }),
         tap(x => document.querySelector('#move-count').textContent = (+document.querySelector('#move-count').textContent || 0) + 1),
-        tap(() => { this.render() }),
-        switchMap(() => this.gameOver$),
+        // tap(() => { this.render(this.#mazeModel.gamesOver) }),
+        tap(() => { this.render(true) }),
+        tap(() => { console.warn('this.#mazeModel.isGameOver', this.#mazeModel.isGameOver) }),
+        mergeMap(() => this.#mazeModel.isGameOver),
+
         takeWhile(() => this.#mazeModel.isCharacterInBounds()),
       )
       .subscribe();
@@ -152,7 +155,7 @@ while (curr) {
 
 path.reverse();
 curr = path[pointer];
-console.log('curr', curr)
+// console.warn('curr', curr)
 const startPathFind = (intervalFn, interval = 80) => {};
 
 const gameLoop = (pathState) => {
@@ -166,11 +169,13 @@ const gameLoop = (pathState) => {
   if (pointer < pathLength) {
     moveCounter.textContent = pointer
     activeMaze.directionMoving = oppositeDir;
-    console.log('activeMaze.directionMoving', activeMaze.directionMoving)
+    // console.log('activeMaze.directionMoving', activeMaze.directionMoving)
 
     activeMaze.moveCharacter(curr);
 
+    const map = activeMaze.print(false);
     content.innerHTML = '';
+    
     content.textContent = activeMaze.print(false);
 
     pointer++;
@@ -188,9 +193,8 @@ const runPath = (loop) => {
         this.intervalHandle = null
       }
     }
-  };
-
-  pathState.intervalHandle = setInterval(() => loop(pathState), 50);
+  }
+  pathState.intervalHandle = setInterval(() => loop(pathState), 20);
 
 };
 
